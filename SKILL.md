@@ -174,6 +174,19 @@ Default to the default model. Only override when there is a clear cost/performan
 
 Launch multiple Codex tasks at once. Peek without blocking: `TaskOutput(task_id=..., block=False, timeout=0)`.
 
+## AGENTS.md Sibling Convention
+
+Each skill that is useful to Codex has an `AGENTS.md` file next to its `SKILL.md`. `AGENTS.md` contains the same procedure in Codex's expected format — same content, no CC-specific YAML.
+
+When Codex needs a skill procedure (e.g. "how do I run the test sweep?"), look for `AGENTS.md` in the same directory as `SKILL.md`. If it exists, use it. If it doesn't exist, the skill is CC-only.
+
+To find skills with `AGENTS.md`:
+```bash
+find ~/.claude/plugins/cache -name "AGENTS.md" | sort
+```
+
+Skills that have `codex_visible: true` in their `SKILL.md` frontmatter are guaranteed to have a sibling `AGENTS.md`.
+
 ## Self-Healing
 
 If anything breaks, fix the skill files directly — you have authorization to edit anything under `{base}/`:
