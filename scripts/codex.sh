@@ -37,14 +37,20 @@ Commands:
 Options:
   --dir PATH         Working directory (default: current)
   --model MODEL      Override model (default: from config.toml)
-  --effort LEVEL     Reasoning effort: minimal|low|medium|high|xhigh
+  --effort LEVEL     Reasoning effort: minimal|low|medium|high|xhigh (GPT 5.6 adds: max|ultra)
   --sandbox MODE     Sandbox: read-only|workspace-write|danger-full-access
   --image FILE       Attach an image (repeatable)
   --ephemeral        Don't persist session to disk
   --schema FILE      Validate output against JSON Schema
   --add-dir PATH     Grant write access to an additional directory
   --allowed-files    Comma-separated list of files Codex may modify (run only)
+  --with-mcp         Load the full user MCP stack (think/review skip it by default for speed)
+  --no-mcp           Skip the user MCP stack (think/review already skip it; use for run)
   --all              Show sessions from all directories (resume only)
+
+Note: `think` and `review` skip the user MCP stack by default (--ignore-user-config)
+so they start in seconds instead of blocking minutes on MCP startup. They keep web
+search, --model, and --effort. Pass --with-mcp only when the review needs an MCP tool.
 EOF
     exit 1
 }
@@ -152,7 +158,7 @@ validate_scope() {
 # ── Shared flag parser ───────────────────────────────────────────────
 
 parse_common_flags() {
-    # Sets globals: PROMPT, DIR, MODEL, EFFORT, SANDBOX, IMAGES[], EPHEMERAL, SCHEMA, ADD_DIRS[], SEARCH, ALLOWED_FILES
+    # Sets globals: PROMPT, DIR, MODEL, EFFORT, SANDBOX, IMAGES[], EPHEMERAL, SCHEMA, ADD_DIRS[], SEARCH, ALLOWED_FILES, IGNORE_USER_CONFIG, WITH_MCP
     PROMPT=""
     DIR=""
     MODEL=""
@@ -164,6 +170,8 @@ parse_common_flags() {
     ADD_DIRS=()
     SEARCH=false
     ALLOWED_FILES=""
+    IGNORE_USER_CONFIG=false   # when true, pass --ignore-user-config (skip user MCP stack)
+    WITH_MCP=false             # --with-mcp: force-load the full user MCP stack
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -177,6 +185,8 @@ parse_common_flags() {
             --add-dir)       ADD_DIRS+=("$2"); shift 2 ;;
             --search)        SEARCH=true; shift ;;
             --allowed-files) ALLOWED_FILES="$2"; shift 2 ;;
+            --no-mcp)        IGNORE_USER_CONFIG=true; shift ;;
+            --with-mcp)      WITH_MCP=true; shift ;;
             --*)             echo "WARNING: Unknown flag '$1' ignored (if it takes a value, pass the prompt before flags)" >&2; shift ;;
             *)
                 if [[ -z "$PROMPT" ]]; then
@@ -190,6 +200,7 @@ parse_common_flags() {
 build_cmd() {
     # Builds CMD array from parsed globals. Caller sets defaults before calling.
     CMD=("$CODEX_BIN" exec --skip-git-repo-check)
+    $IGNORE_USER_CONFIG && CMD+=(--ignore-user-config)
     [[ -n "$DIR" ]]     && CMD+=(-C "$DIR")
     [[ -n "$MODEL" ]]   && CMD+=(-m "$MODEL")
     [[ -n "$EFFORT" ]]  && CMD+=(-c "model_reasoning_effort=\"$EFFORT\"")
@@ -247,10 +258,15 @@ think_codex() {
         exit 1
     fi
 
-    # Defaults for think: read-only sandbox, web search on, ephemeral
+    # Defaults for think: read-only sandbox, web search on, ephemeral.
+    # Skip the user MCP stack by default: analysis/review rarely needs project
+    # MCP servers, and loading the full stack adds minutes of startup and has
+    # hung for ~40min. Web search, model, and effort survive because they are
+    # passed as CLI -c/-m overrides, not file config. Opt back in with --with-mcp.
     [[ -z "$SANDBOX" ]] && SANDBOX="read-only"
     SEARCH=true
     EPHEMERAL=true
+    $WITH_MCP || IGNORE_USER_CONFIG=true
 
     build_cmd
 
@@ -323,6 +339,7 @@ review_codex() {
     local commit=""
     local uncommitted=false
     local dir=""
+    local with_mcp=false   # --with-mcp: load full user MCP stack (default: skip it)
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -330,6 +347,7 @@ review_codex() {
             --commit)      commit="$2"; shift 2 ;;
             --uncommitted) uncommitted=true; shift ;;
             --dir)         dir="$2"; shift 2 ;;
+            --with-mcp)    with_mcp=true; shift ;;
             --*)           echo "WARNING: Unknown flag '$1' ignored" >&2; shift ;;
             *)
                 if [[ -z "$prompt" ]]; then
@@ -344,9 +362,11 @@ review_codex() {
     fi
 
     local -a cmd=("$CODEX_BIN" exec review --skip-git-repo-check)
-    # Enable web search and disable color for clean output
+    # Skip the user MCP stack by default (see think_codex note); --with-mcp re-enables.
+    $with_mcp || cmd+=(--ignore-user-config)
+    # Enable web search. NOTE: `codex exec review` does NOT accept --color (unlike
+    # `codex exec`); passing it errors with "unexpected argument '--color'".
     cmd+=(-c 'features.search_tool=true')
-    cmd+=(--color never)
     [[ -n "$base" ]]   && cmd+=(--base "$base")
     [[ -n "$commit" ]] && cmd+=(--commit "$commit")
     $uncommitted       && cmd+=(--uncommitted)

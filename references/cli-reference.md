@@ -49,7 +49,7 @@
 
 ```bash
 # Model and reasoning
--c model="gpt-5.4"
+-c model="gpt-5.5"                      # default; 5.6 family: gpt-5.6-terra / -sol / -luna
 -c model_reasoning_effort="xhigh"      # minimal|low|medium|high|xhigh
 -c model_reasoning_summary="detailed"   # auto|concise|detailed|none
 
@@ -67,9 +67,13 @@
 
 | Model | Use Case |
 |-------|----------|
-| `gpt-5.4` | Best coding model, xhigh reasoning + fast mode |
+| `gpt-5.5` | **Current default** (config.toml). Frontier coding, research, real-world work. |
+| `gpt-5.6-terra` | Balanced 5.6 frontier model. Adds `max`/`ultra` efforts. Verified callable 2026-07-16. |
+| `gpt-5.6-sol` | Most capable 5.6 frontier model. Adds `max`/`ultra` efforts. Verified callable 2026-07-16 (intermittently 400'd earlier in July — availability fluctuates). |
+| `gpt-5.6-luna` | Fast/affordable 5.6 model. Adds `max` effort (no `ultra`). Verified callable 2026-07-16. |
+| `gpt-5.4` | Previous default; strong coding model, xhigh reasoning + fast mode |
 | `gpt-5.4-pro` | Maximum performance, Pro/Enterprise only |
-| `gpt-5.3-codex` | Previous best, still excellent |
+| `gpt-5.3-codex` | Older best, still capable |
 | `gpt-5.3-codex-spark` | Ultra-fast, ChatGPT Pro only |
 | `gpt-5.1-codex-mini` | Cost-effective, fast |
 | `gpt-5.1-codex-max` | Long-horizon agentic tasks |
@@ -83,6 +87,8 @@
 | `medium` | Daily driver |
 | `high` | Complex tasks |
 | `xhigh` | Maximum accuracy, benchmarks |
+| `max` | Deeper than `xhigh` — **GPT 5.6 only** (sol/terra/luna) |
+| `ultra` | Deepest tier — **GPT 5.6 sol/terra only** (luna caps at `max`) |
 
 ## Sandbox Modes
 

@@ -1,6 +1,6 @@
 # codex
 
-A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill that delegates tasks to [OpenAI Codex CLI](https://github.com/openai/codex) (GPT-5.4) for precision coding, code review, deliberation, and complex implementation.
+A [Claude Code](https://docs.anthropic.com/en/docs/claude-code) skill that delegates tasks to [OpenAI Codex CLI](https://github.com/openai/codex) (GPT-5.5 by default; GPT-5.6 sol/terra/luna available) for precision coding, code review, deliberation, and complex implementation.
 
 Codex runs as a background agent — launch a task, continue working, and collect results when ready.
 
@@ -52,7 +52,7 @@ Once installed, Claude Code uses this skill automatically when delegating to Cod
 Codex is configured via `~/.codex/config.toml`. Recommended defaults:
 
 ```toml
-model = "gpt-5.4"
+model = "gpt-5.5"                       # default; GPT-5.6 family (gpt-5.6-terra/-sol/-luna) via --model
 model_reasoning_effort = "xhigh"
 sandbox_mode = "danger-full-access"
 
@@ -60,7 +60,7 @@ sandbox_mode = "danger-full-access"
 fast_mode = true
 ```
 
-Override per-invocation with `--model`, `--effort`, or `--sandbox` flags.
+Override per-invocation with `--model`, `--effort` (GPT 5.6 adds `max`/`ultra`), or `--sandbox` flags.
 
 ## File Structure
 
